@@ -66,6 +66,76 @@
   <script>
     "use strict";
     // Код писать здесь
+    // Находим элементы формы
+    const nameInput = document.querySelector('.add-form-name');
+    const textInput = document.querySelector('.add-form-text');
+    const addButton = document.querySelector('.add-form-button');
+    
+    // Переменная для всего списка комментариев
+    const commentsList = document.querySelector('.comments');
+
+    // Обработчики событий на изменения полей ввода
+    nameInput.addEventListener('input', function() {
+      console.log('Имя изменено:', this.value);
+    });
+
+    textInput.addEventListener('input', function() {
+      console.log('Комментарий изменен:', this.value);
+    });
+
+    // Обработчик события на нажатие кнопки "Написать"
+    addButton.addEventListener('click', function() {
+      // Получаем значения полей
+      const name = nameInput.value.trim() || 'Аноним';
+      const text = textInput.value.trim();
+      
+      // Проверяем, что комментарий не пустой
+      if (!text) {
+        alert('Введите комментарий!');
+        return;
+      }
+
+      // Текущая дата и время
+      const now = new Date();
+      const dateStr = now.toLocaleString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Создаем шаблонную строку комментария на основе существующего
+      const newCommentHTML = `
+        <li class="comment">
+          <div class="comment-header">
+            <div>${name}</div>
+            <div>${dateStr}</div>
+          </div>
+          <div class="comment-body">
+            <div class="comment-text">
+              ${text}
+            </div>
+          </div>
+          <div class="comment-footer">
+            <div class="likes">
+              <span class="likes-counter">0</span>
+              <button class="like-button"></button>
+            </div>
+          </div>
+        </li>
+      `;
+
+      // Добавляем новый комментарий в начало списка с помощью innerHTML
+      commentsList.insertAdjacentHTML('afterbegin', newCommentHTML);
+
+      // Очищаем поля ввода
+      nameInput.value = '';
+      textInput.value = '';
+
+      console.log('Новый комментарий добавлен!');
+    });
+
     console.log("It works!");
   </script>
 </html>
