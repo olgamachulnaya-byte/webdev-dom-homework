@@ -66,76 +66,109 @@
   <script>
     "use strict";
     // Код писать здесь
-    // Находим элементы формы
-    const nameInput = document.querySelector('.add-form-name');
-    const textInput = document.querySelector('.add-form-text');
-    const addButton = document.querySelector('.add-form-button');
-    
-    // Переменная для всего списка комментариев
-    const commentsList = document.querySelector('.comments');
+   // 1. Инициализируем массив с начальными данными
+const comments = [
+  {
+    name: "Глеб Фокин",
+    date: "12.02.22 12:18",
+    text: "Это будет первый комментарий на этой странице",
+    likes: 3,
+    isLiked: false,
+  },
+  {
+    name: "Варвара Н.",
+    date: "13.02.22 19:22",
+    text: "Мне нравится как оформлена эта страница! ❤",
+    likes: 75,
+    isLiked: true,
+  },
+];
 
-    // Обработчики событий на изменения полей ввода
-    nameInput.addEventListener('input', function() {
-      console.log('Имя изменено:', this.value);
-    });
+const nameInput = document.querySelector('.add-form-name');
+const textInput = document.querySelector('.add-form-text');
+const addButton = document.querySelector('.add-form-button');
+const commentsList = document.querySelector('.comments');
 
-    textInput.addEventListener('input', function() {
-      console.log('Комментарий изменен:', this.value);
-    });
+// 2. Функция для привязки обработчиков клика на лайки
+const initLikeButtonsListeners = () => {
+  const likeButtons = document.querySelectorAll('.like-button');
 
-    // Обработчик события на нажатие кнопки "Написать"
-    addButton.addEventListener('click', function() {
-      // Получаем значения полей
-      const name = nameInput.value.trim() || 'Аноним';
-      const text = textInput.value.trim();
-      
-      // Проверяем, что комментарий не пустой
-      if (!text) {
-        alert('Введите комментарий!');
-        return;
+  for (const likeButton of likeButtons) {
+    likeButton.addEventListener('click', () => {
+      // Находим индекс комментария в массиве через data-атрибут
+      const index = likeButton.dataset.index;
+      const comment = comments[index];
+
+      // Меняем состояние
+      if (comment.isLiked) {
+        comment.likes--;
+        comment.isLiked = false;
+      } else {
+        comment.likes++;
+        comment.isLiked = true;
       }
 
-      // Текущая дата и время
-      const now = new Date();
-      const dateStr = now.toLocaleString('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      // Создаем шаблонную строку комментария на основе существующего
-      const newCommentHTML = `
-        <li class="comment">
-          <div class="comment-header">
-            <div>${name}</div>
-            <div>${dateStr}</div>
-          </div>
-          <div class="comment-body">
-            <div class="comment-text">
-              ${text}
-            </div>
-          </div>
-          <div class="comment-footer">
-            <div class="likes">
-              <span class="likes-counter">0</span>
-              <button class="like-button"></button>
-            </div>
-          </div>
-        </li>
-      `;
-
-      // Добавляем новый комментарий в начало списка с помощью innerHTML
-      commentsList.insertAdjacentHTML('afterbegin', newCommentHTML);
-
-      // Очищаем поля ввода
-      nameInput.value = '';
-      textInput.value = '';
-
-      console.log('Новый комментарий добавлен!');
+      // Перерисовываем список
+      renderComments();
     });
+  }
+};
 
-    console.log("It works!");
+// 3. Основная функция рендера
+const renderComments = () => {
+  const commentsHtml = comments.map((comment, index) => {
+    return `
+      <li class="comment">
+        <div class="comment-header">
+          <div>${comment.name}</div>
+          <div>${comment.date}</div>
+        </div>
+        <div class="comment-body">
+          <div class="comment-text">
+            ${comment.text}
+          </div>
+        </div>
+        <div class="comment-footer">
+          <div class="likes">
+            <span class="likes-counter">${comment.likes}</span>
+            <button data-index="${index}" class="like-button ${comment.isLiked ? '-active-like' : ''}"></button>
+          </div>
+        </div>
+      </li>`;
+  }).join('');
+
+  commentsList.innerHTML = commentsHtml;
+
+  // После того как HTML вставлен, нужно заново навесить обработчики событий
+  initLikeButtonsListeners();
+};
+
+// Первичный рендер при загрузке
+renderComments();
+
+// Обработчик добавления нового комментария
+addButton.addEventListener('click', () => {
+  if (!textInput.value.trim()) return;
+
+  const now = new Date();
+  const dateStr = now.toLocaleString('ru-RU', {
+    day: '2-digit', month: '2-digit', year: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  // Добавляем объект в массив данных
+  comments.push({
+    name: nameInput.value.trim() || 'Аноним',
+    date: dateStr,
+    text: textInput.value.trim(),
+    likes: 0,
+    isLiked: false,
+  });
+
+  // Очищаем форму и перерисовываем
+  nameInput.value = '';
+  textInput.value = '';
+  renderComments();
+});
   </script>
 </html>
