@@ -1,13 +1,21 @@
-import { comments } from "./commentsData.js";
+import { comments, setComments } from "./commentsData.js";
 import { renderComments } from "./render.js";
-import { formatText } from "./utils.js";
+import { formatText, formatDate } from "./utils.js";
 import { initLikeListeners, initReplyListeners } from "./listeners.js";
+import { addCommentApi, getCommentsApi } from "./api.js";
 
 const commentsList = document.getElementById("comments-list");
 const addButton = document.getElementById("add-button");
 const nameInput = document.getElementById("name-input");
 const textInput = document.getElementById("text-input");
 
+const mapApiComment = (comment) => ({
+  name: formatText(comment.name),
+  date: formatDate(comment.date),
+  text: formatText(comment.text),
+  likes: 0,
+  isLiked: false,
+});
 
 const appRender = () => {
   renderComments(comments, commentsList);
@@ -15,29 +23,36 @@ const appRender = () => {
   initReplyListeners(comments, textInput);
 };
 
-addButton.addEventListener('click', () => {
+const loadComments = async () => {
+  const commentsFromApi = await getCommentsApi();
+  setComments(commentsFromApi.map(mapApiComment));
+  appRender();
+};
+
+const showError = () => {
+  alert("Что-то пошло не так, попробуйте позже");
+};
+
+addButton.addEventListener("click", async () => {
   const name = nameInput.value.trim();
   const text = textInput.value.trim();
 
   if (!name || !text) return;
 
-  const dateStr = new Date().toLocaleString('ru-RU', {
-    day: '2-digit', month: '2-digit', year: '2-digit',
-    hour: '2-digit', minute: '2-digit'
-  }).replace(',', '');
+  addButton.disabled = true;
 
-  comments.push({
-    name: formatText(name),
-    date: dateStr,
-    text: formatText(text),
-    likes: 0,
-    isLiked: false
-  });
+  try {
+    await addCommentApi({ name, text });
 
-  nameInput.value = "";
-  textInput.value = "";
-  appRender();
+    nameInput.value = "";
+    textInput.value = "";
+
+    await loadComments();
+  } catch (error) {
+    showError();
+  } finally {
+    addButton.disabled = false;
+  }
 });
 
-
-appRender();
+loadComments().catch(showError);
