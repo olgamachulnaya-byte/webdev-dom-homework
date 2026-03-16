@@ -24,8 +24,8 @@ const appRender = () => {
 };
 
 const loadComments = async () => {
-  const commentsFromApi = await getCommentsApi();
-  setComments(commentsFromApi.map(mapApiComment));
+  const commentsResponse = await getCommentsApi();
+  setComments(commentsResponse.comments.map(mapApiComment));
   appRender();
 };
 
