@@ -10,7 +10,7 @@ const nameInput = document.getElementById("name-input");
 const textInput = document.getElementById("text-input");
 
 const mapApiComment = (comment) => ({
-  name: formatText(comment.name),
+  name: formatText(comment.author.name),
   date: formatDate(comment.date),
   text: formatText(comment.text),
   likes: 0,
