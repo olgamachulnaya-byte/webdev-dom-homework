@@ -1,17 +1,17 @@
 const API_URL = "https://wedev-api.sky.pro/api/v1/irina-l/comments";
 
-export const getCommentsApi = async () => {
-  const response = await fetch(API_URL);
+export const getCommentsApi = () => {
+  return fetch(API_URL).then((response) => {
+    if (!response.ok) {
+      throw new Error("Не удалось загрузить комментарии");
+    }
 
-  if (!response.ok) {
-    throw new Error("Не удалось загрузить комментарии");
-  }
-
-  return response.json();
+    return response.json();
+  });
 };
 
-export const addCommentApi = async ({ name, text }) => {
-  const response = await fetch(API_URL, {
+export const addCommentApi = ({ name, text }) => {
+  return fetch(API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -20,11 +20,11 @@ export const addCommentApi = async ({ name, text }) => {
       name,
       text,
     }),
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error("Не удалось добавить комментарий");
+    }
+
+    return response.json();
   });
-
-  if (!response.ok) {
-    throw new Error("Не удалось добавить комментарий");
-  }
-
-  return response.json();
 };
