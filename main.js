@@ -36,6 +36,25 @@ const appRender = () => {
   initReplyListeners(comments, textInput);
 };
 
+const showError = (error) => {
+  if (error.message === "NETWORK_ERROR") {
+    alert("Кажется, у вас сломался интернет, попробуйте позже");
+    return;
+  }
+
+  if (error.message === "BAD_REQUEST") {
+    alert("Имя и комментарий должны быть не короче 3 символов");
+    return;
+  }
+
+  if (error.message === "SERVER_ERROR") {
+    alert("Сервер сломался, попробуй позже");
+    return;
+  }
+
+  alert("Что-то пошло не так, попробуйте позже");
+};
+
 const loadComments = () => {
   setCommentsLoading(true);
 
@@ -49,22 +68,29 @@ const loadComments = () => {
     });
 };
 
-const showError = () => {
-  alert("Что-то пошло не так, попробуйте позже");
+const addCommentWithRetry = ({ name, text }, retries = 1) => {
+  return addCommentApi({ name, text }).catch((error) => {
+    if (error.message === "SERVER_ERROR" && retries > 0) {
+      return addCommentWithRetry({ name, text }, retries - 1);
+    }
+
+    throw error;
+  });
 };
 
 addButton.addEventListener("click", () => {
   const name = nameInput.value.trim();
   const text = textInput.value.trim();
 
-  if (!name || !text) {
+  if (name.length < 3 || text.length < 3) {
+    alert("Имя и комментарий должны быть не короче 3 символов");
     return;
   }
 
   addButton.disabled = true;
   setAddFormLoading(true);
 
-  addCommentApi({ name, text })
+  addCommentWithRetry({ name, text })
     .then(() => {
       nameInput.value = "";
       textInput.value = "";
