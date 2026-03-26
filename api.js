@@ -1,4 +1,4 @@
-const API_URL = "https://wedev-api.sky.pro/api/v1/irina-l/comments";
+const API_URL = "https://wedev-api.sky.pro/api/v1/irina-1/comments";
 
 export const getCommentsApi = () => {
   return fetch(API_URL).then((response) => {
