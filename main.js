@@ -2,15 +2,25 @@ import { comments, setComments } from "./commentsData.js";
 import { renderComments } from "./render.js";
 import { formatText, formatDate } from "./utils.js";
 import { initLikeListeners, initReplyListeners } from "./listeners.js";
-import { addCommentApi, getCommentsApi } from "./api.js";
+import {
+  addCommentApi,
+  getCommentsApi,
+  loginApi,
+  registerApi,
+} from "./api.js";
+import { renderLoginComponent } from "./loginComponent.js";
+import { renderRegisterComponent } from "./registerComponent.js";
+
+const STORAGE_KEY = "comments-app-user";
 
 const commentsList = document.getElementById("comments-list");
 const commentsLoading = document.getElementById("comments-loading");
-const addForm = document.getElementById("add-form");
-const addFormLoading = document.getElementById("add-form-loading");
-const addButton = document.getElementById("add-button");
-const nameInput = document.getElementById("name-input");
-const textInput = document.getElementById("text-input");
+const authRoot = document.getElementById("auth-root");
+
+let user = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+let currentPage = "comments";
+let authErrorMessage = "";
+let isAuthLoading = false;
 
 const mapApiComment = (comment) => ({
   name: formatText(comment.author.name),
@@ -25,15 +35,203 @@ const setCommentsLoading = (isLoading) => {
   commentsList.classList.toggle("hidden", isLoading);
 };
 
-const setAddFormLoading = (isLoading) => {
-  addForm.classList.toggle("hidden", isLoading);
-  addFormLoading.classList.toggle("hidden", !isLoading);
+const saveUser = (nextUser) => {
+  user = nextUser;
+
+  if (!nextUser) {
+    localStorage.removeItem(STORAGE_KEY);
+    return;
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
 };
 
 const appRender = () => {
   renderComments(comments, commentsList);
   initLikeListeners(comments, commentsList, appRender);
-  initReplyListeners(comments, textInput);
+
+  const textInput = document.getElementById("text-input");
+  if (textInput) {
+    initReplyListeners(comments, textInput);
+  }
+
+  renderBottomSection();
+};
+
+const renderCommentForm = () => {
+  authRoot.innerHTML = `
+    <div id="add-form" class="add-form">
+      <input
+        type="text"
+        id="name-input"
+        class="add-form-name"
+        value="${formatText(user.name)}"
+        readonly
+      />
+      <textarea
+        id="text-input"
+        class="add-form-text"
+        placeholder="Введите ваш комментарий"
+        rows="4"
+      ></textarea>
+      <div class="add-form-row">
+        <button id="add-button" class="add-form-button">Написать</button>
+      </div>
+    </div>
+    <p id="add-form-loading" class="status-message hidden">Комментарий добавляется</p>
+  `;
+
+  const addButton = document.getElementById("add-button");
+  const textInput = document.getElementById("text-input");
+  const addForm = document.getElementById("add-form");
+  const addFormLoading = document.getElementById("add-form-loading");
+
+  const setAddFormLoading = (isLoading) => {
+    addForm.classList.toggle("hidden", isLoading);
+    addFormLoading.classList.toggle("hidden", !isLoading);
+  };
+
+  addButton.addEventListener("click", () => {
+    const text = textInput.value.trim();
+
+    if (!text) {
+      return;
+    }
+
+    addButton.disabled = true;
+    setAddFormLoading(true);
+
+    addCommentApi({ text, token: user.token })
+      .then(() => {
+        textInput.value = "";
+
+        return getCommentsApi();
+      })
+      .then((commentsResponse) => {
+        setComments(commentsResponse.comments.map(mapApiComment));
+        appRender();
+      })
+      .catch((error) => {
+        alert(error.message);
+      })
+      .finally(() => {
+        addButton.disabled = false;
+        setAddFormLoading(false);
+      });
+  });
+};
+
+const renderUnauthorizedSection = () => {
+  authRoot.innerHTML = `
+    <p class="status-message">
+      Чтобы добавить комментарий, <a href="#" id="go-to-login" class="auth-link">авторизуйтесь</a>
+    </p>
+  `;
+
+  document.getElementById("go-to-login").addEventListener("click", (event) => {
+    event.preventDefault();
+    currentPage = "login";
+    authErrorMessage = "";
+    renderBottomSection();
+  });
+};
+
+const renderBottomSection = () => {
+  if (currentPage === "login") {
+    renderLoginComponent({
+      container: authRoot,
+      errorMessage: authErrorMessage,
+      isLoading: isAuthLoading,
+      onGoToRegister: () => {
+        currentPage = "register";
+        authErrorMessage = "";
+        renderBottomSection();
+      },
+      onLogin: ({ login, password }) => {
+        if (!login || !password) {
+          authErrorMessage = "Заполните логин и пароль";
+          renderBottomSection();
+          return;
+        }
+
+        isAuthLoading = true;
+        authErrorMessage = "";
+        renderBottomSection();
+
+        loginApi({ login, password })
+          .then((response) => {
+            saveUser({
+              name: response.user.name,
+              login: response.user.login,
+              token: response.user.token,
+            });
+            currentPage = "comments";
+            appRender();
+          })
+          .catch((error) => {
+            authErrorMessage = error.message;
+            renderBottomSection();
+          })
+          .finally(() => {
+            isAuthLoading = false;
+            renderBottomSection();
+          });
+      },
+    });
+
+    return;
+  }
+
+  if (currentPage === "register") {
+    renderRegisterComponent({
+      container: authRoot,
+      errorMessage: authErrorMessage,
+      isLoading: isAuthLoading,
+      onGoToLogin: () => {
+        currentPage = "login";
+        authErrorMessage = "";
+        renderBottomSection();
+      },
+      onRegister: ({ login, name, password }) => {
+        if (!login || !name || !password) {
+          authErrorMessage = "Заполните все поля";
+          renderBottomSection();
+          return;
+        }
+
+        isAuthLoading = true;
+        authErrorMessage = "";
+        renderBottomSection();
+
+        registerApi({ login, name, password })
+          .then((response) => {
+            saveUser({
+              name: response.user.name,
+              login: response.user.login,
+              token: response.user.token,
+            });
+            currentPage = "comments";
+            appRender();
+          })
+          .catch((error) => {
+            authErrorMessage = error.message;
+            renderBottomSection();
+          })
+          .finally(() => {
+            isAuthLoading = false;
+            renderBottomSection();
+          });
+      },
+    });
+
+    return;
+  }
+
+  if (user) {
+    renderCommentForm();
+  } else {
+    renderUnauthorizedSection();
+  }
 };
 
 const loadComments = () => {
@@ -49,47 +247,6 @@ const loadComments = () => {
     });
 };
 
-const showError = (error) => {
+loadComments().catch((error) => {
   alert(error.message);
-};
-
-const addCommentWithRetry = ({ name, text }) => {
-  return addCommentApi({ name, text }).catch((error) => {
-    if (error.message === "Ошибка сервера") {
-      return addCommentWithRetry({ name, text });
-    }
-
-    throw error;
-  });
-};
-
-addButton.addEventListener("click", () => {
-  const name = nameInput.value.trim();
-  const text = textInput.value.trim();
-
-  if (!name || !text) {
-    return;
-  }
-
-  addButton.disabled = true;
-  setAddFormLoading(true);
-
-  addCommentWithRetry({ name, text })
-    .then(() => {
-      nameInput.value = "";
-      textInput.value = "";
-
-      return getCommentsApi();
-    })
-    .then((commentsResponse) => {
-      setComments(commentsResponse.comments.map(mapApiComment));
-      appRender();
-    })
-    .catch(showError)
-    .finally(() => {
-      addButton.disabled = false;
-      setAddFormLoading(false);
-    });
 });
-
-loadComments().catch(showError);

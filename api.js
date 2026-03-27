@@ -1,8 +1,14 @@
-const API_URL = "https://wedev-api.sky.pro/api/v1/irina-1/comments";
+const API_URL = "https://wedev-api.sky.pro/api/v2/irina-1/comments";
+const LOGIN_URL = "https://wedev-api.sky.pro/api/user/login";
+const REGISTER_URL = "https://wedev-api.sky.pro/api/user";
 
 const getErrorMessageByStatus = (status) => {
   if (status === 400) {
-    return "Имя и комментарий должны быть не короче 3 символов";
+    return "Проверьте корректность введенных данных";
+  }
+
+  if (status === 401) {
+    return "Неверный логин или пароль";
   }
 
   if (status >= 500) {
@@ -34,13 +40,43 @@ export const getCommentsApi = () => {
   return requestJson(API_URL);
 };
 
-export const addCommentApi = ({ name, text }) => {
+export const addCommentApi = ({ text, token }) => {
   return requestJson(API_URL, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({
-      name,
       text,
       forceError: true,
+    }),
+  });
+};
+
+export const loginApi = ({ login, password }) => {
+  return requestJson(LOGIN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      login,
+      password,
+    }),
+  });
+};
+
+export const registerApi = ({ login, name, password }) => {
+  return requestJson(REGISTER_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      login,
+      name,
+      password,
     }),
   });
 };
