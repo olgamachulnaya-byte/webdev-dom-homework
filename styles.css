@@ -150,3 +150,25 @@ body {
 .hidden {
   display: none;
 }
+
+.auth-link {
+  color: #bcec30;
+}
+
+.auth-error {
+  color: #ff7d7d;
+  margin: 12px 0 0;
+}
+
+.auth-switch {
+  margin: 16px 0 0;
+}
+
+.add-form h3 {
+  margin: 0 0 16px;
+}
+
+.add-form input + input,
+.add-form input + textarea {
+  margin-top: 12px;
+}
