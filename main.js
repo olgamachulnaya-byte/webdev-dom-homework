@@ -49,8 +49,18 @@ const loadComments = () => {
     });
 };
 
-const showError = () => {
-  alert("Что-то пошло не так, попробуйте позже");
+const showError = (error) => {
+  alert(error.message);
+};
+
+const addCommentWithRetry = ({ name, text }) => {
+  return addCommentApi({ name, text }).catch((error) => {
+    if (error.message === "Ошибка сервера") {
+      return addCommentWithRetry({ name, text });
+    }
+
+    throw error;
+  });
 };
 
 addButton.addEventListener("click", () => {
@@ -64,7 +74,7 @@ addButton.addEventListener("click", () => {
   addButton.disabled = true;
   setAddFormLoading(true);
 
-  addCommentApi({ name, text })
+  addCommentWithRetry({ name, text })
     .then(() => {
       nameInput.value = "";
       textInput.value = "";
