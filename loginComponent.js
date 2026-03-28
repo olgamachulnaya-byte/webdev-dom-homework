@@ -1,5 +1,5 @@
 export const renderLoginComponent = ({
-  container,
+  containe,
   onLogin,
   onGoToRegister,
   errorMessage,
