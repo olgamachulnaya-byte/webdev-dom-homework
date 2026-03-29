@@ -44,12 +44,10 @@ export const addCommentApi = ({ text, token }) => {
   return requestJson(API_URL, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       text,
-      forceError: true,
     }),
   });
 };
@@ -57,9 +55,6 @@ export const addCommentApi = ({ text, token }) => {
 export const loginApi = ({ login, password }) => {
   return requestJson(LOGIN_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify({
       login,
       password,
@@ -70,9 +65,6 @@ export const loginApi = ({ login, password }) => {
 export const registerApi = ({ login, name, password }) => {
   return requestJson(REGISTER_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify({
       login,
       name,
