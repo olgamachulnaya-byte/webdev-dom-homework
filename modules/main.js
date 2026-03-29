@@ -46,18 +46,6 @@ const saveUser = (nextUser) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
 };
 
-const appRender = () => {
-  renderComments(comments, commentsList);
-  initLikeListeners(comments, commentsList, appRender);
-
-  const textInput = document.getElementById("text-input");
-  if (textInput) {
-    initReplyListeners(comments, textInput);
-  }
-
-  renderBottomSection();
-};
-
 const renderCommentForm = () => {
   authRoot.innerHTML = `
     <div id="add-form" class="add-form">
@@ -136,101 +124,105 @@ const renderUnauthorizedSection = () => {
   });
 };
 
+const onAuthSuccess = (response) => {
+  saveUser({
+    name: response.user.name,
+    login: response.user.login,
+    token: response.user.token,
+  });
+  currentPage = "comments";
+  appRender();
+};
+
+const handleAuthRequest = (request) => {
+  isAuthLoading = true;
+  authErrorMessage = "";
+  renderBottomSection();
+
+  request
+    .then(onAuthSuccess)
+    .catch((error) => {
+      authErrorMessage = error.message;
+      renderBottomSection();
+    })
+    .finally(() => {
+      isAuthLoading = false;
+      renderBottomSection();
+    });
+};
+
+const renderLoginPage = () => {
+  renderLoginComponent({
+    container: authRoot,
+    errorMessage: authErrorMessage,
+    isLoading: isAuthLoading,
+    onGoToRegister: () => {
+      currentPage = "register";
+      authErrorMessage = "";
+      renderBottomSection();
+    },
+    onLogin: ({ login, password }) => {
+      if (!login || !password) {
+        authErrorMessage = "Заполните логин и пароль";
+        renderBottomSection();
+        return;
+      }
+
+      handleAuthRequest(loginApi({ login, password }));
+    },
+  });
+};
+
+const renderRegisterPage = () => {
+  renderRegisterComponent({
+    container: authRoot,
+    errorMessage: authErrorMessage,
+    isLoading: isAuthLoading,
+    onGoToLogin: () => {
+      currentPage = "login";
+      authErrorMessage = "";
+      renderBottomSection();
+    },
+    onRegister: ({ login, name, password }) => {
+      if (!login || !name || !password) {
+        authErrorMessage = "Заполните все поля";
+        renderBottomSection();
+        return;
+      }
+
+      handleAuthRequest(registerApi({ login, name, password }));
+    },
+  });
+};
+
 const renderBottomSection = () => {
   if (currentPage === "login") {
-    renderLoginComponent({
-      container: authRoot,
-      errorMessage: authErrorMessage,
-      isLoading: isAuthLoading,
-      onGoToRegister: () => {
-        currentPage = "register";
-        authErrorMessage = "";
-        renderBottomSection();
-      },
-      onLogin: ({ login, password }) => {
-        if (!login || !password) {
-          authErrorMessage = "Заполните логин и пароль";
-          renderBottomSection();
-          return;
-        }
-
-        isAuthLoading = true;
-        authErrorMessage = "";
-        renderBottomSection();
-
-        loginApi({ login, password })
-          .then((response) => {
-            saveUser({
-              name: response.user.name,
-              login: response.user.login,
-              token: response.user.token,
-            });
-            currentPage = "comments";
-            appRender();
-          })
-          .catch((error) => {
-            authErrorMessage = error.message;
-            renderBottomSection();
-          })
-          .finally(() => {
-            isAuthLoading = false;
-            renderBottomSection();
-          });
-      },
-    });
-
+    renderLoginPage();
     return;
   }
 
   if (currentPage === "register") {
-    renderRegisterComponent({
-      container: authRoot,
-      errorMessage: authErrorMessage,
-      isLoading: isAuthLoading,
-      onGoToLogin: () => {
-        currentPage = "login";
-        authErrorMessage = "";
-        renderBottomSection();
-      },
-      onRegister: ({ login, name, password }) => {
-        if (!login || !name || !password) {
-          authErrorMessage = "Заполните все поля";
-          renderBottomSection();
-          return;
-        }
-
-        isAuthLoading = true;
-        authErrorMessage = "";
-        renderBottomSection();
-
-        registerApi({ login, name, password })
-          .then((response) => {
-            saveUser({
-              name: response.user.name,
-              login: response.user.login,
-              token: response.user.token,
-            });
-            currentPage = "comments";
-            appRender();
-          })
-          .catch((error) => {
-            authErrorMessage = error.message;
-            renderBottomSection();
-          })
-          .finally(() => {
-            isAuthLoading = false;
-            renderBottomSection();
-          });
-      },
-    });
-
+    renderRegisterPage();
     return;
   }
 
   if (user) {
     renderCommentForm();
-  } else {
-    renderUnauthorizedSection();
+    return;
+  }
+
+  renderUnauthorizedSection();
+};
+
+const appRender = () => {
+  renderComments(comments, commentsList);
+  renderBottomSection();
+
+  initLikeListeners(comments, commentsList, appRender);
+
+  const textInput = document.getElementById("text-input");
+  if (textInput) {
+    initReplyListeners(comments, textInput);
   }
 };
 
